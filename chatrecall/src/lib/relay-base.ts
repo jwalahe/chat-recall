@@ -53,6 +53,7 @@ export function installRelay(platform: Platform): void {
       content: event.data.content,
       model: event.data.model,
       timestamp: event.data.timestamp,
+      tokenUsage: event.data.tokenUsage,
     }).catch((err) => {
       // Service worker may be inactive — message will be lost
       // This is acceptable; the next message will trigger a wake
