@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/
+
+# Build output
+dist/
+build/
+.output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+coverage/
+
+# Extension build artifacts
+*.crx
+*.pem
+*.zip
+web-ext-artifacts/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+Thumbs.db
