@@ -43,6 +43,12 @@ export function installRelay(platform: Platform): void {
     if (!flags.capture.enabled) return;
     if (!flags.capture[platform]) return;
 
+    // Check if extension context is still valid before sending
+    if (!chrome.runtime?.id) {
+      console.warn('[ChatRecall] Extension context invalidated — please refresh the page to resume capture.');
+      return;
+    }
+
     // Forward to service worker
     chrome.runtime.sendMessage({
       action: 'ingest',
@@ -55,9 +61,14 @@ export function installRelay(platform: Platform): void {
       timestamp: event.data.timestamp,
       tokenUsage: event.data.tokenUsage,
     }).catch((err) => {
-      // Service worker may be inactive — message will be lost
-      // This is acceptable; the next message will trigger a wake
-      console.warn('[ChatRecall] Failed to relay message:', err);
+      const msg = String(err);
+      if (msg.includes('Extension context invalidated')) {
+        console.warn('[ChatRecall] Extension context invalidated — please refresh the page to resume capture.');
+      } else {
+        // Service worker may be inactive — message will be lost
+        // This is acceptable; the next message will trigger a wake
+        console.warn('[ChatRecall] Failed to relay message:', err);
+      }
     });
   });
 }
