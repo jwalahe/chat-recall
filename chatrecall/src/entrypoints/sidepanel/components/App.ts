@@ -4,6 +4,7 @@ import type { Conversation } from '../../../lib/types';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../../utils/constants';
 import { ConversationDetail } from './ConversationDetail';
 import { Settings } from './Settings';
+import { computeTokenStats } from './ContextMeter';
 
 type View = { type: 'list' } | { type: 'detail'; conversation: Conversation } | { type: 'settings' };
 
@@ -142,14 +143,29 @@ export function App() {
           ),
           conv.threadId && h('span', { style: 'font-size: 12px; margin-left: 4px;', title: 'Has related conversations' }, '\uD83D\uDD17')
         ),
-        h('div', { style: 'display: flex; gap: 8px; font-size: 11px; color: #888; margin-top: 4px;' },
+        h('div', { style: 'display: flex; gap: 8px; font-size: 11px; color: #888; margin-top: 4px; align-items: center;' },
           h('span', { style: `color: ${PLATFORM_COLORS[conv.platform]}; font-weight: 500;` },
             PLATFORM_NAMES[conv.platform]
           ),
           h('span', null, '\u00B7'),
           h('span', null, formatRelativeTime(conv.updatedAt)),
           h('span', null, '\u00B7'),
-          h('span', null, `${conv.messageCount} msgs`)
+          h('span', null, `${conv.messageCount} msgs`),
+          (() => {
+            const stats = computeTokenStats(conv.messages, conv.model);
+            if (!stats) return null;
+            const pct = Math.min(stats.fillPercent, 100);
+            const color = pct < 50 ? '#10b981' : pct < 75 ? '#f59e0b' : '#ef4444';
+            return h('span', { style: `display: inline-flex; align-items: center; gap: 3px; margin-left: 2px;` },
+              h('span', null, '\u00B7'),
+              h('span', {
+                style: `display: inline-block; width: 24px; height: 4px; background: #e5e7eb; border-radius: 2px; position: relative; overflow: hidden;`,
+              },
+                h('span', { style: `position: absolute; left: 0; top: 0; height: 100%; width: ${pct}%; background: ${color}; border-radius: 2px;` }),
+              ),
+              h('span', { style: `color: ${color}; font-weight: 500;` }, `${pct.toFixed(0)}%`),
+            );
+          })(),
         ),
         conv.messages.length > 0 && h('div', {
           style: 'font-size: 12px; color: #666; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;',

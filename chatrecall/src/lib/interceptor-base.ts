@@ -7,6 +7,7 @@
  */
 
 import { MSG_TYPE } from '../utils/constants';
+import type { TokenUsage } from './types';
 
 export interface EmittedMessage {
   platform: string;
@@ -17,6 +18,7 @@ export interface EmittedMessage {
   content: string;
   model: string;
   timestamp: number;
+  tokenUsage?: TokenUsage;
 }
 
 /**
