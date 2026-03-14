@@ -6,6 +6,7 @@ import { installRelay } from '../lib/relay-base';
 
 export default defineContentScript({
   matches: ['*://claude.ai/*'],
+  runAt: 'document_start',
   main() {
     injectScript('/claude-interceptor.js');
     installRelay('claude');
