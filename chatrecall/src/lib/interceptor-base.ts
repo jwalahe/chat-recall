@@ -6,7 +6,7 @@
  * and provides its own stream processor.
  */
 
-import { MSG_TYPE } from '../../utils/constants';
+import { MSG_TYPE } from '../utils/constants';
 
 export interface EmittedMessage {
   platform: string;

@@ -5,17 +5,20 @@ export default defineConfig({
   manifest: {
     name: 'ChatRecall',
     description: 'Search and reconnect with your AI chat history',
-    permissions: ['storage', 'unlimitedStorage', 'sidePanel', 'offscreen'],
+    permissions: ['storage', 'unlimitedStorage', 'sidePanel'],
     host_permissions: [
       '*://claude.ai/*',
       '*://chatgpt.com/*',
       '*://gemini.google.com/*',
     ],
-    side_panel: {
-      default_path: 'sidepanel/index.html',
-    },
     action: {
       default_title: 'Open ChatRecall',
     },
+    web_accessible_resources: [
+      {
+        resources: ['claude-interceptor.js', 'chatgpt-interceptor.js'],
+        matches: ['*://claude.ai/*', '*://chatgpt.com/*'],
+      },
+    ],
   },
 });
