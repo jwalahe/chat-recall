@@ -75,6 +75,27 @@ export default defineBackground(() => {
         .catch((err) => sendResponse({ ok: false, error: String(err) }));
       return true;
     }
+
+    if (message.action === 'importFile') {
+      handleImportFile(message.data, message.filename)
+        .then((stats) => sendResponse({ ok: true, data: stats }))
+        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true;
+    }
+
+    if (message.action === 'getStats') {
+      handleGetStats()
+        .then((stats) => sendResponse({ ok: true, data: stats }))
+        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true;
+    }
+
+    if (message.action === 'clearData') {
+      handleClearData(message.platform)
+        .then(() => sendResponse({ ok: true }))
+        .catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true;
+    }
   });
 
   /**
@@ -224,5 +245,51 @@ export default defineBackground(() => {
     }
 
     return { imported, duplicates, updated };
+  }
+
+  async function handleImportFile(
+    data: unknown,
+    filename?: string
+  ): Promise<{ imported: number; duplicates: number; updated: number }> {
+    const { detectPlatform } = await import('../../lib/parsers/detect-platform');
+    const platform = detectPlatform(data, filename);
+
+    let conversations: Conversation[];
+    switch (platform) {
+      case 'claude': {
+        const { parseClaudeExport } = await import('../../lib/parsers/claude-export');
+        conversations = parseClaudeExport(data);
+        break;
+      }
+      case 'chatgpt': {
+        const { parseChatGPTExport } = await import('../../lib/parsers/chatgpt-export');
+        conversations = parseChatGPTExport(data);
+        break;
+      }
+      default:
+        throw new Error(`Import not yet supported for ${platform}`);
+    }
+
+    return handleImport(conversations);
+  }
+
+  async function handleGetStats(): Promise<{
+    totalConversations: number;
+    byPlatform: Record<string, number>;
+  }> {
+    const { getStorageStats } = await import('../../lib/db');
+    const db = await getDB();
+    return getStorageStats(db);
+  }
+
+  async function handleClearData(platform?: string): Promise<void> {
+    const db = await getDB();
+    if (platform) {
+      const { clearPlatformData } = await import('../../lib/db');
+      await clearPlatformData(db, platform);
+    } else {
+      const { clearAllData } = await import('../../lib/db');
+      await clearAllData(db);
+    }
   }
 });
