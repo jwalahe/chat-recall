@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import type { Conversation } from '../../lib/types';
-import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../utils/constants';
+import type { Conversation } from '../../../lib/types';
+import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../../utils/constants';
 
 export function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);

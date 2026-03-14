@@ -8,8 +8,8 @@
  * for this platform, messages are silently dropped.
  */
 
-import { MSG_TYPE } from '../../utils/constants';
-import { DEFAULT_FLAGS, type FeatureFlags, type Platform } from '../../lib/types';
+import { MSG_TYPE } from '../utils/constants';
+import { DEFAULT_FLAGS, type FeatureFlags, type Platform } from './types';
 
 /**
  * Install the relay listener for a specific platform.
