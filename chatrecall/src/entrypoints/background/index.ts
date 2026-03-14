@@ -11,7 +11,7 @@
 import { getDB, putConversation, findByExternalId, getConversation } from '../../lib/db';
 import { createConversation } from '../../lib/normalizer';
 import { computeAccessScore } from '../../lib/scoring';
-import type { IngestMessage, Conversation, Platform } from '../../lib/types';
+import type { IngestMessage, Conversation, Platform, TokenUsage } from '../../lib/types';
 import { nanoid } from 'nanoid';
 
 export default defineBackground(() => {
@@ -28,6 +28,7 @@ export default defineBackground(() => {
         content: string;
         createdAt: number;
         model?: string;
+        tokenUsage?: TokenUsage;
       }>;
       lastUpdated: number;
     }
@@ -127,6 +128,7 @@ export default defineBackground(() => {
       content: msg.content,
       createdAt: msg.timestamp,
       model: msg.model || undefined,
+      tokenUsage: msg.tokenUsage,
     });
     buffer.lastUpdated = Date.now();
 
@@ -161,6 +163,7 @@ export default defineBackground(() => {
         content: m.content,
         createdAt: m.createdAt,
         model: m.model,
+        metadata: m.tokenUsage ? { tokenUsage: m.tokenUsage } : undefined,
       }));
 
       const updated: Conversation = {

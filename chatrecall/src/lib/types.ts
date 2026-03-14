@@ -87,6 +87,15 @@ export interface ImportProgress {
   error?: string;
 }
 
+/** Token usage reported per assistant turn */
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+  cacheCreationTokens?: number;
+  stopReason?: string;
+}
+
 /** Message sent from MAIN world interceptor to ISOLATED world relay */
 export interface InterceptedMessage {
   type: 'CHATRECALL_STREAM_DATA';
@@ -98,6 +107,7 @@ export interface InterceptedMessage {
   content: string;
   model: string;
   timestamp: number;
+  tokenUsage?: TokenUsage;
 }
 
 /** Message sent from relay to service worker */
@@ -110,4 +120,5 @@ export interface IngestMessage {
   content: string;
   model: string;
   timestamp: number;
+  tokenUsage?: TokenUsage;
 }

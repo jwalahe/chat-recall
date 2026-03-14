@@ -10,6 +10,7 @@
 import { installFetchInterceptor, emitToRelay } from '../lib/interceptor-base';
 import { parseSSE } from '../utils/sse-parser';
 import { INTERCEPT_PATTERNS } from '../utils/constants';
+import type { TokenUsage } from '../lib/types';
 
 export default defineUnlistedScript(() => {
   function shouldIntercept(url: string): boolean {
@@ -31,6 +32,7 @@ export default defineUnlistedScript(() => {
     let messageId = '';
     let model = '';
     const contentBlocks: string[] = [];
+    let tokenUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -49,6 +51,16 @@ export default defineUnlistedScript(() => {
               messageId = data.message?.id ?? '';
               model = data.message?.model ?? '';
               contentBlocks.length = 0;
+              tokenUsage = { inputTokens: 0, outputTokens: 0 };
+
+              // Capture initial token counts from message_start
+              if (data.message?.usage) {
+                const u = data.message.usage;
+                tokenUsage.inputTokens = u.input_tokens ?? 0;
+                tokenUsage.outputTokens = u.output_tokens ?? 0;
+                tokenUsage.cacheReadTokens = u.cache_read_input_tokens ?? 0;
+                tokenUsage.cacheCreationTokens = u.cache_creation_input_tokens ?? 0;
+              }
               break;
 
             case 'content_block_start':
@@ -62,6 +74,16 @@ export default defineUnlistedScript(() => {
               }
               break;
 
+            case 'message_delta':
+              // Cumulative output tokens + stop reason from message_delta
+              if (data.usage) {
+                tokenUsage.outputTokens = data.usage.output_tokens ?? tokenUsage.outputTokens;
+              }
+              if (data.delta?.stop_reason) {
+                tokenUsage.stopReason = data.delta.stop_reason;
+              }
+              break;
+
             case 'message_stop':
               emitToRelay({
                 platform: 'claude',
@@ -72,6 +94,9 @@ export default defineUnlistedScript(() => {
                 content: contentBlocks.join('\n'),
                 model,
                 timestamp: Date.now(),
+                tokenUsage: tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0
+                  ? tokenUsage
+                  : undefined,
               });
               break;
           }

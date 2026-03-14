@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import type { Conversation, Message, Platform } from '../../../lib/types';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../../utils/constants';
+import { ContextMeter, computeTokenStats } from './ContextMeter';
 
 interface Props {
   conversation: Conversation;
@@ -36,6 +37,8 @@ export function ConversationDetail({ conversation, onBack }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  const tokenStats = computeTokenStats(conv.messages, conv.model);
+
   return h('div', { style: 'display: flex; flex-direction: column; height: 100vh;' },
     // Header
     h('div', { style: 'padding: 12px; border-bottom: 1px solid #eee; flex-shrink: 0;' },
@@ -58,6 +61,9 @@ export function ConversationDetail({ conversation, onBack }: Props) {
         h('span', null, `${conv.messageCount} msgs`),
       ),
     ),
+
+    // Context meter (only shown when token data is available)
+    tokenStats && h(ContextMeter, { stats: tokenStats }),
 
     // Messages
     h('div', { style: 'flex: 1; overflow-y: auto; padding: 12px;' },
