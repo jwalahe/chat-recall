@@ -1,0 +1,143 @@
+[
+  {
+    "title": "Database Migration Plan",
+    "create_time": 1710100000.0,
+    "update_time": 1710103600.0,
+    "conversation_id": "conv-db-001",
+    "current_node": "node-004",
+    "mapping": {
+      "node-root": {
+        "id": "node-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-001"]
+      },
+      "node-001": {
+        "id": "node-001",
+        "message": {
+          "id": "msg-gpt-001",
+          "author": { "role": "system", "metadata": {} },
+          "create_time": 1710100000.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["You are a helpful assistant."]
+          },
+          "metadata": {}
+        },
+        "parent": "node-root",
+        "children": ["node-002"]
+      },
+      "node-002": {
+        "id": "node-002",
+        "message": {
+          "id": "msg-gpt-002",
+          "author": { "role": "user", "metadata": {} },
+          "create_time": 1710100060.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["I need to migrate from PostgreSQL 12 to 16. What should I watch out for?"]
+          },
+          "metadata": {}
+        },
+        "parent": "node-001",
+        "children": ["node-003"]
+      },
+      "node-003": {
+        "id": "node-003",
+        "message": {
+          "id": "msg-gpt-003",
+          "author": { "role": "assistant", "metadata": {} },
+          "create_time": 1710100120.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["Here are the key things to watch for when migrating from PostgreSQL 12 to 16:\n\n1. **Breaking changes**: Check the release notes for each major version\n2. **Extension compatibility**: Verify all extensions work with PG 16\n3. **Query plan changes**: The query optimizer has improved, which might change execution plans"]
+          },
+          "metadata": {
+            "model_slug": "gpt-4"
+          }
+        },
+        "parent": "node-002",
+        "children": ["node-004"]
+      },
+      "node-004": {
+        "id": "node-004",
+        "message": {
+          "id": "msg-gpt-004",
+          "author": { "role": "user", "metadata": {} },
+          "create_time": 1710100180.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["What about pg_dump vs pg_upgrade?"]
+          },
+          "metadata": {}
+        },
+        "parent": "node-003",
+        "children": []
+      }
+    },
+    "moderation_results": []
+  },
+  {
+    "title": "React Hooks Question",
+    "create_time": 1710200000.0,
+    "update_time": 1710200600.0,
+    "conversation_id": "conv-react-001",
+    "current_node": "node-r003",
+    "mapping": {
+      "node-r-root": {
+        "id": "node-r-root",
+        "message": null,
+        "parent": null,
+        "children": ["node-r001"]
+      },
+      "node-r001": {
+        "id": "node-r001",
+        "message": {
+          "id": "msg-r001",
+          "author": { "role": "user", "metadata": {} },
+          "create_time": 1710200000.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["When should I use useCallback vs useMemo?"]
+          },
+          "metadata": {}
+        },
+        "parent": "node-r-root",
+        "children": ["node-r002"]
+      },
+      "node-r002": {
+        "id": "node-r002",
+        "message": {
+          "id": "msg-r002",
+          "author": { "role": "assistant", "metadata": {} },
+          "create_time": 1710200060.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["useCallback memoizes a function reference, while useMemo memoizes a computed value."]
+          },
+          "metadata": {
+            "model_slug": "gpt-4o"
+          }
+        },
+        "parent": "node-r001",
+        "children": ["node-r003"]
+      },
+      "node-r003": {
+        "id": "node-r003",
+        "message": {
+          "id": "msg-r003",
+          "author": { "role": "user", "metadata": {} },
+          "create_time": 1710200120.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["Can you show me an example?"]
+          },
+          "metadata": {}
+        },
+        "parent": "node-r002",
+        "children": []
+      }
+    },
+    "moderation_results": []
+  }
+]

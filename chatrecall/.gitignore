@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.output/
+.wxt/
+*.crx
+*.pem
+*.zip
+web-ext-artifacts/
+coverage/
+.DS_Store

@@ -1,0 +1,66 @@
+[
+  {
+    "uuid": "msg-001",
+    "text": "I need to redesign the authentication flow for our app",
+    "sender": "human",
+    "created_at": "2024-03-10T00:00:00.000Z",
+    "updated_at": "2024-03-10T00:00:00.000Z",
+    "attachments": [],
+    "files": [],
+    "conversation": {
+      "uuid": "conv-auth-001",
+      "name": "Auth Flow Redesign",
+      "created_at": "2024-03-10T00:00:00.000Z",
+      "updated_at": "2024-03-10T01:00:00.000Z",
+      "model": "claude-3-opus-20240229"
+    }
+  },
+  {
+    "uuid": "msg-002",
+    "text": "Here's an approach using JWT tokens with refresh rotation:\n\n1. Short-lived access tokens (15 min)\n2. Refresh token rotation on each use\n3. Token family tracking for reuse detection",
+    "sender": "assistant",
+    "created_at": "2024-03-10T00:01:00.000Z",
+    "updated_at": "2024-03-10T00:01:00.000Z",
+    "attachments": [],
+    "files": [],
+    "conversation": {
+      "uuid": "conv-auth-001",
+      "name": "Auth Flow Redesign",
+      "created_at": "2024-03-10T00:00:00.000Z",
+      "updated_at": "2024-03-10T01:00:00.000Z",
+      "model": "claude-3-opus-20240229"
+    }
+  },
+  {
+    "uuid": "msg-003",
+    "text": "How do I set up a Python virtual environment?",
+    "sender": "human",
+    "created_at": "2024-03-11T10:00:00.000Z",
+    "updated_at": "2024-03-11T10:00:00.000Z",
+    "attachments": [],
+    "files": [],
+    "conversation": {
+      "uuid": "conv-python-001",
+      "name": "Python Setup Help",
+      "created_at": "2024-03-11T10:00:00.000Z",
+      "updated_at": "2024-03-11T10:30:00.000Z",
+      "model": "claude-3-sonnet-20240229"
+    }
+  },
+  {
+    "uuid": "msg-004",
+    "text": "You can create a virtual environment using:\n\n```bash\npython -m venv myenv\nsource myenv/bin/activate\n```",
+    "sender": "assistant",
+    "created_at": "2024-03-11T10:01:00.000Z",
+    "updated_at": "2024-03-11T10:01:00.000Z",
+    "attachments": [],
+    "files": [],
+    "conversation": {
+      "uuid": "conv-python-001",
+      "name": "Python Setup Help",
+      "created_at": "2024-03-11T10:00:00.000Z",
+      "updated_at": "2024-03-11T10:30:00.000Z",
+      "model": "claude-3-sonnet-20240229"
+    }
+  }
+]
