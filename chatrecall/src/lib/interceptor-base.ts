@@ -72,10 +72,15 @@ export function installFetchInterceptor(
 
     if (shouldIntercept(url)) {
       // Clone so the page's response is unaffected
-      const cloned = response.clone();
-      processResponse(cloned, url).catch((err) => {
-        console.warn('[ChatRecall] Stream processing error:', err);
-      });
+      try {
+        const cloned = response.clone();
+        console.log('[ChatRecall] Intercepting response:', url, 'status:', response.status, 'body:', !!cloned.body);
+        processResponse(cloned, url).catch((err) => {
+          console.warn('[ChatRecall] Stream processing error:', err);
+        });
+      } catch (cloneErr) {
+        console.warn('[ChatRecall] Failed to clone response:', cloneErr);
+      }
     }
 
     return response;
