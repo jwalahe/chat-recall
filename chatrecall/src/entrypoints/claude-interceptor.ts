@@ -23,10 +23,7 @@ export default defineUnlistedScript(() => {
   }
 
   async function processResponse(response: Response, url: string): Promise<void> {
-    if (!response.body) {
-      console.warn('[ChatRecall] No response body for:', url);
-      return;
-    }
+    if (!response.body) return;
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -36,122 +33,76 @@ export default defineUnlistedScript(() => {
     let model = '';
     const contentBlocks: string[] = [];
     let tokenUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
-    let eventCount = 0;
-    let emitted = false;
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const { events, remaining } = parseSSE(buffer);
-        buffer = remaining;
+      buffer += decoder.decode(value, { stream: true });
+      const { events, remaining } = parseSSE(buffer);
+      buffer = remaining;
 
-        for (const event of events) {
-          eventCount++;
-          try {
-            const data = JSON.parse(event.data);
+      for (const event of events) {
+        try {
+          const data = JSON.parse(event.data);
 
-            switch (data.type) {
-              case 'message_start':
-                messageId = data.message?.id ?? '';
-                model = data.message?.model ?? '';
-                contentBlocks.length = 0;
-                tokenUsage = { inputTokens: 0, outputTokens: 0 };
+          switch (data.type) {
+            case 'message_start':
+              messageId = data.message?.id ?? '';
+              model = data.message?.model ?? '';
+              contentBlocks.length = 0;
+              tokenUsage = { inputTokens: 0, outputTokens: 0 };
 
-                // Capture initial token counts from message_start
-                if (data.message?.usage) {
-                  const u = data.message.usage;
-                  tokenUsage.inputTokens = u.input_tokens ?? 0;
-                  tokenUsage.outputTokens = u.output_tokens ?? 0;
-                  tokenUsage.cacheReadTokens = u.cache_read_input_tokens ?? 0;
-                  tokenUsage.cacheCreationTokens = u.cache_creation_input_tokens ?? 0;
-                }
-                break;
+              // Capture initial token counts from message_start
+              if (data.message?.usage) {
+                const u = data.message.usage;
+                tokenUsage.inputTokens = u.input_tokens ?? 0;
+                tokenUsage.outputTokens = u.output_tokens ?? 0;
+                tokenUsage.cacheReadTokens = u.cache_read_input_tokens ?? 0;
+                tokenUsage.cacheCreationTokens = u.cache_creation_input_tokens ?? 0;
+              }
+              break;
 
-              case 'content_block_start':
-                contentBlocks[data.index] = '';
-                break;
+            case 'content_block_start':
+              contentBlocks[data.index] = '';
+              break;
 
-              case 'content_block_delta':
-                if (data.delta?.type === 'text_delta' && data.delta.text) {
-                  contentBlocks[data.index] =
-                    (contentBlocks[data.index] || '') + data.delta.text;
-                }
-                break;
+            case 'content_block_delta':
+              if (data.delta?.type === 'text_delta' && data.delta.text) {
+                contentBlocks[data.index] =
+                  (contentBlocks[data.index] || '') + data.delta.text;
+              }
+              break;
 
-              case 'message_delta':
-                // Cumulative output tokens + stop reason from message_delta
-                if (data.usage) {
-                  tokenUsage.outputTokens = data.usage.output_tokens ?? tokenUsage.outputTokens;
-                }
-                if (data.delta?.stop_reason) {
-                  tokenUsage.stopReason = data.delta.stop_reason;
-                }
-                break;
+            case 'message_delta':
+              // Cumulative output tokens + stop reason from message_delta
+              if (data.usage) {
+                tokenUsage.outputTokens = data.usage.output_tokens ?? tokenUsage.outputTokens;
+              }
+              if (data.delta?.stop_reason) {
+                tokenUsage.stopReason = data.delta.stop_reason;
+              }
+              break;
 
-              case 'message_stop':
-                emitToRelay({
-                  platform: 'claude',
-                  action: 'message_complete',
-                  conversationId: extractConversationId(url),
-                  messageId,
-                  role: 'assistant',
-                  content: contentBlocks.join('\n'),
-                  model,
-                  timestamp: Date.now(),
-                  tokenUsage: tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0
-                    ? tokenUsage
-                    : undefined,
-                });
-                emitted = true;
-                break;
-            }
-          } catch {
-            // Skip malformed JSON lines
+            case 'message_stop':
+              emitToRelay({
+                platform: 'claude',
+                action: 'message_complete',
+                conversationId: extractConversationId(url),
+                messageId,
+                role: 'assistant',
+                content: contentBlocks.join('\n'),
+                model,
+                timestamp: Date.now(),
+                tokenUsage: tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0
+                  ? tokenUsage
+                  : undefined,
+              });
+              break;
           }
+        } catch {
+          // Skip malformed JSON lines
         }
-      }
-
-      // Fallback: if we read SSE events but never hit message_stop, emit what we have
-      if (!emitted && contentBlocks.some(b => b.length > 0)) {
-        console.warn('[ChatRecall] Stream ended without message_stop, emitting buffered content');
-        emitToRelay({
-          platform: 'claude',
-          action: 'message_complete',
-          conversationId: extractConversationId(url),
-          messageId: messageId || `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: contentBlocks.join('\n'),
-          model,
-          timestamp: Date.now(),
-          tokenUsage: tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0
-            ? tokenUsage
-            : undefined,
-        });
-      }
-
-      if (eventCount === 0) {
-        console.warn('[ChatRecall] No SSE events parsed from response for:', url);
-      }
-    } catch (err) {
-      console.warn('[ChatRecall] Stream reading error:', err);
-      // Still try to emit what we have if we got content
-      if (!emitted && contentBlocks.some(b => b.length > 0)) {
-        emitToRelay({
-          platform: 'claude',
-          action: 'message_complete',
-          conversationId: extractConversationId(url),
-          messageId: messageId || `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: contentBlocks.join('\n'),
-          model,
-          timestamp: Date.now(),
-          tokenUsage: tokenUsage.inputTokens > 0 || tokenUsage.outputTokens > 0
-            ? tokenUsage
-            : undefined,
-        });
       }
     }
   }
