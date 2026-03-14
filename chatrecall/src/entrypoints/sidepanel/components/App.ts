@@ -2,11 +2,16 @@ import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
 import type { Conversation } from '../../../lib/types';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../../utils/constants';
+import { ConversationDetail } from './ConversationDetail';
+import { Settings } from './Settings';
+
+type View = { type: 'list' } | { type: 'detail'; conversation: Conversation } | { type: 'settings' };
 
 export function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<View>({ type: 'list' });
 
   useEffect(() => {
     loadConversations();
@@ -41,7 +46,6 @@ export function App() {
         query,
       });
       if (response?.ok) {
-        // Search returns IDs + scores; fetch full conversations
         const ids = response.data.map((r: { id: string }) => r.id);
         const fullConvs = await Promise.all(
           ids.map(async (id: string) => {
@@ -70,7 +74,23 @@ export function App() {
     return new Date(timestamp).toLocaleDateString();
   }
 
-  // Render using h() calls (no JSX)
+  // Conversation Detail view
+  if (view.type === 'detail') {
+    return h(ConversationDetail, {
+      conversation: view.conversation,
+      onBack: () => setView({ type: 'list' }),
+    });
+  }
+
+  // Settings view
+  if (view.type === 'settings') {
+    return h(Settings, {
+      onBack: () => setView({ type: 'list' }),
+      onImportComplete: () => loadConversations(),
+    });
+  }
+
+  // List view (default)
   return h('div', { style: 'padding: 12px;' },
     // Header
     h('div', { style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;' },
@@ -78,6 +98,7 @@ export function App() {
       h('button', {
         style: 'background: none; border: none; font-size: 18px; cursor: pointer;',
         title: 'Settings',
+        onClick: () => setView({ type: 'settings' }),
       }, '\u2699')
     ),
 
@@ -99,7 +120,11 @@ export function App() {
       h('p', { style: 'font-weight: 500;' }, searchQuery ? 'No results found' : 'No conversations yet'),
       h('p', { style: 'font-size: 12px; margin-top: 4px;' },
         searchQuery ? 'Try different keywords' : 'Start chatting on Claude or ChatGPT'
-      )
+      ),
+      !searchQuery && h('button', {
+        onClick: () => setView({ type: 'settings' }),
+        style: 'margin-top: 12px; padding: 6px 16px; border: 1px solid #ddd; border-radius: 6px; background: white; font-size: 12px; cursor: pointer; color: #3B82F6;',
+      }, 'Import from file'),
     ),
 
     // Conversation list
@@ -107,6 +132,7 @@ export function App() {
       h('div', {
         key: conv.id,
         style: 'padding: 10px 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.15s;',
+        onClick: () => setView({ type: 'detail', conversation: conv }),
         onMouseEnter: (e: MouseEvent) => (e.currentTarget as HTMLElement).style.background = '#f5f5f5',
         onMouseLeave: (e: MouseEvent) => (e.currentTarget as HTMLElement).style.background = 'white',
       },
