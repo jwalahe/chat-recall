@@ -25,7 +25,10 @@ export interface ParseResult {
  */
 export function parseSSE(buffer: string): ParseResult {
   const events: SSEEvent[] = [];
-  const blocks = buffer.split('\n\n');
+
+  // Normalize \r\n and lone \r to \n so splitting works uniformly
+  const normalized = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = normalized.split('\n\n');
 
   // Last block may be incomplete — keep it as remaining
   const remaining = blocks.pop() || '';

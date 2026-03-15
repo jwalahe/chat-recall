@@ -12,6 +12,22 @@ import { MSG_TYPE } from '../utils/constants';
 import { DEFAULT_FLAGS, type FeatureFlags, type Platform } from './types';
 
 /**
+ * Deep-merge stored feature flags with defaults so that missing
+ * nested keys (e.g. capture.claude) fall back to their defaults
+ * instead of becoming undefined.
+ */
+function mergeFlags(stored: Partial<FeatureFlags>): FeatureFlags {
+  return {
+    ...DEFAULT_FLAGS,
+    ...stored,
+    capture: {
+      ...DEFAULT_FLAGS.capture,
+      ...(stored.capture ?? {}),
+    },
+  };
+}
+
+/**
  * Check if the extension context is still valid.
  * After extension reload, chrome.runtime.id becomes undefined.
  */
@@ -26,38 +42,43 @@ function isContextValid(): boolean {
 /**
  * Install the relay listener for a specific platform.
  *
+ * IMPORTANT: The window message listener is always installed regardless
+ * of whether flag loading succeeds. Flag loading errors (e.g. context
+ * invalidation) must never prevent relay installation.
+ *
  * @param platform - The platform this relay is for (used for flag checking)
  */
 export function installRelay(platform: Platform): void {
   let flags: FeatureFlags = { ...DEFAULT_FLAGS };
 
-  // Load flags from storage — wrapped in try/catch for context invalidation
+  // Load flags from storage — failures are non-fatal
   try {
-    chrome.storage.local.get('featureFlags').then((result) => {
-      if (result.featureFlags) {
-        flags = { ...DEFAULT_FLAGS, ...result.featureFlags };
-      }
-    }).catch(() => {
-      // Context may have been invalidated between check and call
-    });
+    chrome.storage.local
+      .get('featureFlags')
+      .then((result) => {
+        if (result.featureFlags) {
+          flags = mergeFlags(result.featureFlags);
+        }
+      })
+      .catch(() => {
+        // Context may have been invalidated between check and call
+      });
   } catch {
-    // Extension context already invalidated at startup
-    return;
+    // Extension context already invalidated — use defaults
   }
 
-  // Listen for flag updates — wrapped in try/catch
+  // Listen for flag updates — failures are non-fatal
   try {
     chrome.storage.onChanged.addListener((changes) => {
       if (changes.featureFlags?.newValue) {
-        flags = { ...DEFAULT_FLAGS, ...changes.featureFlags.newValue };
+        flags = mergeFlags(changes.featureFlags.newValue);
       }
     });
   } catch {
-    // Extension context invalidated
-    return;
+    // Extension context invalidated — flag updates won't be received
   }
 
-  // Listen for messages from MAIN world interceptor
+  // Always install the message listener regardless of flag loading outcome.
   window.addEventListener('message', (event) => {
     // Only accept messages from the same window
     if (event.source !== window) return;
