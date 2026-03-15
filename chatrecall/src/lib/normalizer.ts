@@ -15,6 +15,7 @@ export function createConversation(params: {
     content: string;
     createdAt: number;
     model?: string;
+    metadata?: Record<string, unknown>;
   }>;
   model: string;
   source: 'live-capture' | 'import';
@@ -32,6 +33,7 @@ export function createConversation(params: {
     content: m.content,
     createdAt: m.createdAt,
     model: m.model,
+    metadata: m.metadata,
   }));
 
   const timestamps = messages.map((m) => m.createdAt).filter((t) => t > 0);
