@@ -183,7 +183,14 @@ export default defineBackground(() => {
         title: '',
         model,
         source: 'live-capture',
-        messages: buffer.messages,
+        messages: buffer.messages.map((m) => ({
+          externalId: m.externalId,
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          createdAt: m.createdAt,
+          model: m.model,
+          metadata: m.tokenUsage ? { tokenUsage: m.tokenUsage } : undefined,
+        })),
       });
 
       await putConversation(db, conv);
