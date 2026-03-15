@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import type { Conversation } from '../../../lib/types';
+import type { Conversation, FeatureFlags } from '../../../lib/types';
+import { DEFAULT_FLAGS } from '../../../lib/types';
 import { PLATFORM_COLORS, PLATFORM_NAMES } from '../../../utils/constants';
 import { ConversationDetail } from './ConversationDetail';
 import { Settings } from './Settings';
@@ -13,9 +14,11 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>({ type: 'list' });
+  const [captureEnabled, setCaptureEnabled] = useState(true);
 
   useEffect(() => {
     loadConversations();
+    loadCaptureStatus();
   }, []);
 
   async function loadConversations() {
@@ -32,6 +35,25 @@ export function App() {
       console.error('[ChatRecall] Failed to load conversations:', err);
     }
     setLoading(false);
+  }
+
+  async function loadCaptureStatus() {
+    try {
+      const result = await chrome.storage.local.get('featureFlags');
+      if (result.featureFlags) {
+        const flags: FeatureFlags = {
+          ...DEFAULT_FLAGS,
+          ...result.featureFlags,
+          capture: {
+            ...DEFAULT_FLAGS.capture,
+            ...(result.featureFlags.capture ?? {}),
+          },
+        };
+        setCaptureEnabled(flags.capture.enabled);
+      }
+    } catch {
+      // Storage unavailable
+    }
   }
 
   async function handleSearch(query: string) {
@@ -86,7 +108,7 @@ export function App() {
   // Settings view
   if (view.type === 'settings') {
     return h(Settings, {
-      onBack: () => setView({ type: 'list' }),
+      onBack: () => { setView({ type: 'list' }); loadCaptureStatus(); },
       onImportComplete: () => loadConversations(),
     });
   }
@@ -176,7 +198,9 @@ export function App() {
     // Status bar
     !loading && h('div', { style: 'position: fixed; bottom: 0; left: 0; right: 0; padding: 8px 12px; background: #f9f9f9; border-top: 1px solid #eee; font-size: 11px; color: #888; display: flex; justify-content: space-between;' },
       h('span', null, `${conversations.length} conversations`),
-      h('span', { style: 'color: #10b981;' }, '\uD83D\uDFE2 Live capture active')
+      captureEnabled
+        ? h('span', { style: 'color: #10b981;' }, '\uD83D\uDFE2 Live capture active')
+        : h('span', { style: 'color: #f59e0b;' }, '\u26A0 Capture paused')
     )
   );
 }
