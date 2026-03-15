@@ -7,9 +7,7 @@ import { installRelay } from '../lib/relay-base';
 export default defineContentScript({
   matches: ['*://chatgpt.com/*'],
   runAt: 'document_start',
-  main(ctx) {
-    if (ctx.isInvalid) return;
-
+  main() {
     try {
       injectScript('/chatgpt-interceptor.js');
     } catch {
@@ -18,6 +16,8 @@ export default defineContentScript({
       // in case an interceptor from a prior injection is already present.
     }
 
+    // Always install the relay. It handles context invalidation internally
+    // via isContextValid() checks before sending messages.
     installRelay('chatgpt');
   },
 });
