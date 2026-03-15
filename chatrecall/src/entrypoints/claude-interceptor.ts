@@ -112,8 +112,20 @@ export default defineUnlistedScript(() => {
 
     try {
       const body = JSON.parse(init.body);
-      const prompt = body.prompt || body.message || '';
-      if (!prompt) return;
+      // Claude.ai may use 'prompt' (text), 'message' (text), or 'messages' (array)
+      let content = '';
+      if (typeof body.prompt === 'string' && body.prompt) {
+        content = body.prompt;
+      } else if (typeof body.message === 'string' && body.message) {
+        content = body.message;
+      } else if (Array.isArray(body.messages) && body.messages.length > 0) {
+        // Extract the last user message from a messages array
+        const lastMsg = body.messages[body.messages.length - 1];
+        content = typeof lastMsg === 'string'
+          ? lastMsg
+          : lastMsg?.content || JSON.stringify(lastMsg);
+      }
+      if (!content) return;
 
       emitToRelay({
         platform: 'claude',
@@ -121,7 +133,7 @@ export default defineUnlistedScript(() => {
         conversationId: extractConversationId(url),
         messageId: `user-${Date.now()}`,
         role: 'user',
-        content: typeof prompt === 'string' ? prompt : JSON.stringify(prompt),
+        content,
         model: '',
         timestamp: Date.now(),
       });
