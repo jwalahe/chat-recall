@@ -3,11 +3,17 @@
  * Injects the MAIN world interceptor and forwards captured messages to the service worker.
  */
 import { installRelay } from '../lib/relay-base';
+import { suppressContextInvalidatedErrors } from '../lib/suppress-errors';
 
 export default defineContentScript({
   matches: ['*://chatgpt.com/*'],
   runAt: 'document_start',
   main() {
+    // Suppress "Extension context invalidated" errors thrown by the WXT
+    // runtime after the extension is reloaded/updated.  These are harmless
+    // but show up as uncaught errors in the Extensions error panel.
+    suppressContextInvalidatedErrors();
+
     try {
       injectScript('/chatgpt-interceptor.js');
     } catch {
