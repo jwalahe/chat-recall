@@ -29,7 +29,14 @@ export function Settings({ onBack, onImportComplete }: Props) {
   async function loadFlags() {
     const result = await chrome.storage.local.get('featureFlags');
     if (result.featureFlags) {
-      setFlags({ ...DEFAULT_FLAGS, ...result.featureFlags });
+      setFlags({
+        ...DEFAULT_FLAGS,
+        ...result.featureFlags,
+        capture: {
+          ...DEFAULT_FLAGS.capture,
+          ...(result.featureFlags.capture ?? {}),
+        },
+      });
     }
   }
 

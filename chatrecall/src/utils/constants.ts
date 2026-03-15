@@ -2,7 +2,9 @@ import type { Platform } from '../lib/types';
 
 /** URL patterns for intercepting chat API calls */
 export const INTERCEPT_PATTERNS: Record<Platform, RegExp> = {
-  claude: /\/api\/organizations\/[^/]+\/chat_conversations\/[^/]+\/completion/,
+  // Match both the legacy /completion endpoint and any chat_conversations POST
+  // that returns an SSE stream (Claude may have changed their API path).
+  claude: /\/api\/organizations\/[^/]+\/chat_conversations\/[^/]+\/(completion|messages)/,
   chatgpt: /\/backend-api\/conversation$/,
   gemini: /\/_\/BardChatUi/,
   'claude-code': /^$/, // Not intercepted — imported from local file

@@ -2,6 +2,11 @@ import { defineConfig } from 'wxt';
 
 export default defineConfig({
   srcDir: 'src',
+  // Use native chrome.* APIs instead of webextension-polyfill.
+  // The polyfill's top-level check (chrome.runtime.id) throws an uncaught
+  // "Extension context invalidated" error on orphaned content scripts
+  // after the extension is reloaded/updated.
+  extensionApi: 'chrome',
   manifest: {
     name: 'ChatRecall',
     description: 'Search and reconnect with your AI chat history',
