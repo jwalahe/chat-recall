@@ -7,7 +7,8 @@ import { installRelay } from '../lib/relay-base';
 export default defineContentScript({
   matches: ['*://chatgpt.com/*'],
   runAt: 'document_start',
-  main() {
+  main(ctx) {
+    if (ctx.isInvalid) return;
     injectScript('/chatgpt-interceptor.js');
     installRelay('chatgpt');
   },

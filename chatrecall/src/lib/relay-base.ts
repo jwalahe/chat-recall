@@ -12,6 +12,18 @@ import { MSG_TYPE } from '../utils/constants';
 import { DEFAULT_FLAGS, type FeatureFlags, type Platform } from './types';
 
 /**
+ * Check if the extension context is still valid.
+ * After extension reload, chrome.runtime.id becomes undefined.
+ */
+function isContextValid(): boolean {
+  try {
+    return !!chrome.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Install the relay listener for a specific platform.
  *
  * @param platform - The platform this relay is for (used for flag checking)
@@ -19,19 +31,31 @@ import { DEFAULT_FLAGS, type FeatureFlags, type Platform } from './types';
 export function installRelay(platform: Platform): void {
   let flags: FeatureFlags = { ...DEFAULT_FLAGS };
 
-  // Load flags from storage
-  chrome.storage.local.get('featureFlags').then((result) => {
-    if (result.featureFlags) {
-      flags = { ...DEFAULT_FLAGS, ...result.featureFlags };
-    }
-  });
+  // Load flags from storage — wrapped in try/catch for context invalidation
+  try {
+    chrome.storage.local.get('featureFlags').then((result) => {
+      if (result.featureFlags) {
+        flags = { ...DEFAULT_FLAGS, ...result.featureFlags };
+      }
+    }).catch(() => {
+      // Context may have been invalidated between check and call
+    });
+  } catch {
+    // Extension context already invalidated at startup
+    return;
+  }
 
-  // Listen for flag updates
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.featureFlags?.newValue) {
-      flags = { ...DEFAULT_FLAGS, ...changes.featureFlags.newValue };
-    }
-  });
+  // Listen for flag updates — wrapped in try/catch
+  try {
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes.featureFlags?.newValue) {
+        flags = { ...DEFAULT_FLAGS, ...changes.featureFlags.newValue };
+      }
+    });
+  } catch {
+    // Extension context invalidated
+    return;
+  }
 
   // Listen for messages from MAIN world interceptor
   window.addEventListener('message', (event) => {
@@ -44,31 +68,25 @@ export function installRelay(platform: Platform): void {
     if (!flags.capture[platform]) return;
 
     // Check if extension context is still valid before sending
-    if (!chrome.runtime?.id) {
-      console.warn('[ChatRecall] Extension context invalidated — please refresh the page to resume capture.');
-      return;
-    }
+    if (!isContextValid()) return;
 
     // Forward to service worker
-    chrome.runtime.sendMessage({
-      action: 'ingest',
-      platform: event.data.platform,
-      conversationId: event.data.conversationId,
-      messageId: event.data.messageId,
-      role: event.data.role,
-      content: event.data.content,
-      model: event.data.model,
-      timestamp: event.data.timestamp,
-      tokenUsage: event.data.tokenUsage,
-    }).catch((err) => {
-      const msg = String(err);
-      if (msg.includes('Extension context invalidated')) {
-        console.warn('[ChatRecall] Extension context invalidated — please refresh the page to resume capture.');
-      } else {
-        // Service worker may be inactive — message will be lost
-        // This is acceptable; the next message will trigger a wake
-        console.warn('[ChatRecall] Failed to relay message:', err);
-      }
-    });
+    try {
+      chrome.runtime.sendMessage({
+        action: 'ingest',
+        platform: event.data.platform,
+        conversationId: event.data.conversationId,
+        messageId: event.data.messageId,
+        role: event.data.role,
+        content: event.data.content,
+        model: event.data.model,
+        timestamp: event.data.timestamp,
+        tokenUsage: event.data.tokenUsage,
+      }).catch(() => {
+        // Service worker inactive or context invalidated — silently drop
+      });
+    } catch {
+      // Synchronous throw from chrome.runtime.sendMessage — context invalidated
+    }
   });
 }
