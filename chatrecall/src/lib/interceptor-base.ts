@@ -48,8 +48,6 @@ export function installFetchInterceptor(
 ): void {
   const originalFetch = window.fetch;
 
-  console.debug('[ChatRecall] Fetch interceptor installed');
-
   window.fetch = async function (
     input: RequestInfo | URL,
     init?: RequestInit
@@ -60,11 +58,6 @@ export function installFetchInterceptor(
         : input instanceof URL
           ? input.href
           : input.url;
-
-    // Log API calls to help debug interception patterns
-    if (url.includes('/api/') && init?.method === 'POST') {
-      console.debug('[ChatRecall] POST fetch:', url, 'intercepted:', shouldIntercept(url));
-    }
 
     // Capture outgoing user message from request body
     if (shouldIntercept(url) && processRequest && init) {
@@ -78,7 +71,6 @@ export function installFetchInterceptor(
     const response = await originalFetch.call(this, input, init);
 
     if (shouldIntercept(url)) {
-      console.debug('[ChatRecall] Intercepting response from:', url);
       // Clone so the page's response is unaffected
       const cloned = response.clone();
       processResponse(cloned, url).catch((err) => {
